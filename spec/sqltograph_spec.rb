@@ -17,7 +17,7 @@ describe Sqltograph do
 
     `rm -rf /Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/`
 
-    Cadet::Session.open "/Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/" do |neo_session|
+    Cadet::BatchInserter::Session.open "/Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/" do |neo_session|
       transaction do
         models.each do |model|
           models_pk = ActiveRecord::Base.connection.execute("
@@ -47,7 +47,7 @@ describe Sqltograph do
           ")
 
           model.all.each do |ar_object|
-            neo4j_node = neo_session.get_node model.table_name, models_pk, ar_object[models_pk]
+            neo4j_node = get_node model.table_name, models_pk, ar_object[models_pk]
 
             ar_object.attributes.each do |attr|
               neo4j_node[attr[0]] = attr[1]
@@ -60,13 +60,6 @@ describe Sqltograph do
         end
       end
 
-      transaction do
-        neo_session.get_node("persons", "name", "javad")[:age].should == 25
-        neo_session.get_node("persons", "name", "shaaheen")[:age].should == 24
-
-        neo_session.find_node("homes", "address", "1223 berkeley lake lane, houston, tx")[:owner].should == 1
-        neo_session.find_node("homes", "address", "1223 berkeley lake lane, houston, tx")[:owner].should == 1
-      end
-    end
+   end
   end
 end

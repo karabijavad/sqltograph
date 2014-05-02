@@ -1,13 +1,13 @@
 require 'bundler/setup'
 Bundler.setup
 
-ENV['APP_ENV'] = "test"
-
 require 'sqltograph'
 require 'active_record'
 require 'cadet'
 require 'pry'
 require 'database_cleaner'
+
+Dotenv.load "test.env"
 
 ActiveRecord::Base.establish_connection ENV["DATABASE_URL"]
 
