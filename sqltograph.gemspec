@@ -8,10 +8,11 @@ Gem::Specification.new do |spec|
   spec.version       = Sqltograph::VERSION
   spec.authors       = ["Javad Karabi"]
   spec.email         = ["karabijavad@gmail.com"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
+  spec.summary       = %q{create a graph database from your current relational database.}
+  spec.description   = %q{create a graph database from your current relational database.}
   spec.homepage      = ""
   spec.license       = "MIT"
+  spec.platform = 'java'
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
@@ -20,4 +21,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake"
+  spec.add_development_dependency "rspec"
+  spec.add_dependency "cadet"
+  spec.add_dependency "activerecord"
+  spec.add_dependency "activerecord-jdbcmysql-adapter"
 end
