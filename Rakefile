@@ -13,6 +13,16 @@ current_model = ""
 current_model_id = 0
 
 task :sqltograph do
+  skip_tables = []
+  a = ""
+  b = 0
+  Thread.new do
+    while true do
+      p [a, b]
+      sleep 1
+    end
+  end
+
   ActiveRecord::Base.establish_connection ENV['DATABASE_URL']
   models = ActiveRecord::Base.connection.tables.map do |table_name|
     Class.new(ActiveRecord::Base) { self.table_name = table_name }
@@ -21,9 +31,12 @@ task :sqltograph do
   `rm -rf /Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/`
 
   Cadet::BatchInserter::Session.open "/Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/" do |neo_session|
-    transaction do
+
       models.each do |model|
-        models_pk = ActiveRecord::Base.connection.execute("
+        next if skip_tables.include?(model.table_name)
+
+        a = model.table_name
+        models_pk = (ActiveRecord::Base.connection.execute("
           SELECT
             pg_attribute.attname,
             format_type(pg_attribute.atttypid, pg_attribute.atttypmod)
@@ -34,7 +47,7 @@ task :sqltograph do
             pg_attribute.attrelid = pg_class.oid AND
             pg_attribute.attnum = any(pg_index.indkey)
             AND indisprimary
-        ").first['attname']
+        ").first || [])['attname']
         models_fks = ActiveRecord::Base.connection.execute("
           SELECT
               tc.constraint_name, tc.table_name, kcu.column_name,
@@ -49,8 +62,8 @@ task :sqltograph do
           WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='#{model.table_name}';
         ")
 
-        model.all.each do |ar_object|
-          p [model.table_name, ar_object[models_pk]] if Time.now.to_i % 100 == 0
+        model.find_each(batch_size: 1000) do |ar_object|
+          b = ar_object[models_pk]
           neo4j_node = get_node model.table_name, models_pk, ar_object[models_pk]
 
           ar_object.attributes.each do |attr|
@@ -64,7 +77,6 @@ task :sqltograph do
             neo4j_node.send("#{fk['column_name']}_to", other)
           end
         end
-      end
     end
   end
 end
