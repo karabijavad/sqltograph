@@ -36,6 +36,7 @@ task :sqltograph do
         next if skip_tables.include?(model.table_name)
 
         a = model.table_name
+        p "#{a}"
         models_pk = (ActiveRecord::Base.connection.execute("
           SELECT
             pg_attribute.attname,
@@ -68,7 +69,9 @@ task :sqltograph do
 
           ar_object.attributes.each do |attr|
               if attr[1].is_a?(Date) or attr[1].is_a?(DateTime) or attr[1].is_a?(Time)
-                attr[1] = attr[1].to_i
+                attr[1] = attr[1].to_time.to_i
+              elsif attr[1].is_a? Numeric
+                attr[1] = attr[1].to_f
               end
               neo4j_node[attr[0]] = attr[1] if attr[1]
           end
