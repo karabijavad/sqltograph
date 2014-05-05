@@ -13,7 +13,7 @@ current_model = ""
 current_model_id = 0
 
 task :sqltograph do
-  skip_tables = []
+  skip_tables = ["line_items", "members"]
   a = ""
   b = 0
   Thread.new do
@@ -32,12 +32,12 @@ task :sqltograph do
 
   Cadet::BatchInserter::Session.open "/Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/" do |neo_session|
 
-      models.each do |model|
+      [models.first].each do |model|
         next if skip_tables.include?(model.table_name)
 
         a = model.table_name
         p "#{a}"
-        models_pk = (ActiveRecord::Base.connection.execute("
+        query = "
           SELECT
             pg_attribute.attname,
             format_type(pg_attribute.atttypid, pg_attribute.atttypmod)
@@ -48,7 +48,11 @@ task :sqltograph do
             pg_attribute.attrelid = pg_class.oid AND
             pg_attribute.attnum = any(pg_index.indkey)
             AND indisprimary
-        ").first || [])['attname']
+        "
+        result = ActiveRecord::Base.connection.execute query
+        row = result.first
+        next unless row
+        models_pk = row['attname']
         models_fks = ActiveRecord::Base.connection.execute("
           SELECT
               tc.constraint_name, tc.table_name, kcu.column_name,
@@ -63,7 +67,7 @@ task :sqltograph do
           WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='#{model.table_name}';
         ")
 
-        model.find_each(batch_size: 1000) do |ar_object|
+        model.find_each(batch_size: 10000) do |ar_object|
           b = ar_object[models_pk]
           neo4j_node = get_node model.table_name, models_pk, ar_object[models_pk]
 
