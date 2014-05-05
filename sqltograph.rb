@@ -2,14 +2,11 @@ require 'active_record'
 require 'cadet'
 
 current_model = ""
-current_model_id = 0
+current_object_id = 0
 
-skip_tables = []
-a = ""
-b = 0
 Thread.new do
   while true do
-    p [a, b]
+    puts "#{current_model} #{current_object_id}"
     sleep 1
   end
 end
@@ -20,15 +17,12 @@ models = ActiveRecord::Base.connection.tables.map do |table_name|
   Class.new(ActiveRecord::Base) { self.table_name = table_name }
 end
 
-`rm -rf /Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/`
+`rm -rf #{ARGV[1]}`
 
-Cadet::BatchInserter::Session.open "/Users/karabijavad/Downloads/neo4j-community-2.0.3/data/graph.db/" do |neo_session|
-
-    [models.first].each do |model|
-      next if skip_tables.include?(model.table_name)
-
-      a = model.table_name
-      p "#{a}"
+Cadet::BatchInserter::Session.open ARGV[1] do |neo_session|
+    models.each do |model|
+      current_model = model.table_name
+      puts current_model
       query = "
         SELECT
           pg_attribute.attname,
@@ -58,9 +52,8 @@ Cadet::BatchInserter::Session.open "/Users/karabijavad/Downloads/neo4j-community
               ON ccu.constraint_name = tc.constraint_name
         WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='#{model.table_name}';
       ")
-
-      model.find_each(batch_size: 10000) do |ar_object|
-        b = ar_object[models_pk]
+      model.find_each(batch_size: 1000) do |ar_object|
+        current_object_id = ar_object[models_pk]
         neo4j_node = get_node model.table_name, models_pk, ar_object[models_pk]
 
         ar_object.attributes.each do |attr|
