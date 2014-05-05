@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
-
-# Specify your gem's dependencies in sqltograph.gemspec
-gemspec
+gem 'activerecord'
+gem 'cadet'
+gem 'activerecord-jdbcpostgresql-adapter'
